@@ -3,3 +3,7 @@ env/
 
 # IDE meta files
 .idea/
+
+# Python cache files
+*.pyc
+
