@@ -30,7 +30,6 @@ def thread_details_get(slug_or_id):
     forum_slug = api.methods.forum_select_by_id.first(forum_id)[1]
 
     author = api.methods.user_select_by_id.first(thread_author_id)[1]
-    # print('--------------------> trying to set +03:00')
     resp = {
         'slug': thread_slug,
         'forum': forum_slug,

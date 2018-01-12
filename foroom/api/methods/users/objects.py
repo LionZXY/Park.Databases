@@ -3,7 +3,7 @@ from api.errors import DEFAULT_ERROR_DICT
 from utils import print_debug
 
 
-def forum_users_get(slug, query_args):
+def user_objects_get(slug, query_args):
     desc = query_args.get('desc', False)
     desc = True if desc == 'true' else False
     since = query_args.get('since')

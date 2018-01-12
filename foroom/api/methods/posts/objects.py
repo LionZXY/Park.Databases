@@ -1,9 +1,9 @@
 from settings import connection
-from utils import normalize_timestamp, parse_slug_or_id, Convert, print_debug
+from utils import normalize_timestamp, parse_slug_or_id, to_int, print_debug
 from api.errors import DEFAULT_ERROR_DICT
 
 
-def thread_posts_get(slug_or_id, query_args):
+def post_objects_get(slug_or_id, query_args):
     thread_slug, thread_id = parse_slug_or_id(slug_or_id)
     sort = query_args.get('sort')
     since = query_args.get('since')
@@ -17,7 +17,6 @@ def thread_posts_get(slug_or_id, query_args):
     else:
         sort_option = 'ASC'
 
-    print(sort_option)
     limit = int(query_args.get('limit'))
 
     comp = ['>', '<'][1 if desc else 0]
@@ -34,7 +33,6 @@ def thread_posts_get(slug_or_id, query_args):
 
     with connection.xact():
         messages = []
-        print_debug('sort: '.format(sort))
         if not thread_id:
             thread_id = connection.prepare('SELECT id FROM thread WHERE slug = $1').first(thread_slug)
         else:
@@ -43,7 +41,6 @@ def thread_posts_get(slug_or_id, query_args):
             error = DEFAULT_ERROR_DICT
             return error, 404
         if sort == 'flat' or sort is None:
-            print_debug('flat/none: now we\'re supposed to be here')
             if thread_slug:
                 message_select = connection.prepare('''
                     {select_fields}
@@ -56,7 +53,7 @@ def thread_posts_get(slug_or_id, query_args):
                      JOIN forum ON m.forumid = forum.id
                      ORDER BY m.id  {sort}'''.format(sort=sort_option, since=since_cond_message,
                                                      select_fields=select_fields,
-                                                     select_inner=inner_select_fields))  # TODO: check how the fuck does this work
+                                                     select_inner=inner_select_fields))
                 if since:
                     messages = message_select(thread_slug, limit, since)
                 else:
@@ -115,7 +112,7 @@ def thread_posts_get(slug_or_id, query_args):
                     messages = message_select(thread_id, limit, since)
                 else:
                     messages = message_select(thread_id, limit)
-        elif sort == 'parent_tree':  # TODO: fix since
+        elif sort == 'parent_tree':
             if since:
                 message_select = connection.prepare('''
                     {select_fields}
@@ -166,7 +163,7 @@ def thread_posts_get(slug_or_id, query_args):
             'created': normalize_timestamp(x[1], json_format=True),
             'message': x[2],
             'thread': x[3],
-            'parent': Convert.to_int(x[4]),
+            'parent': to_int(x[4]),
             'author': x[5],
             'forum': x[6]
         }

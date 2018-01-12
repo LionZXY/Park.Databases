@@ -2,10 +2,10 @@ from postgresql.exceptions import UniqueError
 
 from settings import connection
 from utils import flush_dictionary, normalize_timestamp
-from api.errors import CANT_FIND_USER_ERROR_DICT
+from api.errors import DEFAULT_ERROR_DICT
 
 
-def forum_thread_create(slug, payload):
+def thread_create(slug, payload):
     author = payload.get('author')
     created = payload.get('created')
     thread_slug = payload.get('slug')
@@ -24,11 +24,11 @@ def forum_thread_create(slug, payload):
                 '$3::TEXT, $4::TEXT, $5::BIGINT, $6::BIGINT) RETURNING id')
             forum = forum_select.first(slug)
             if not forum:
-                resp = CANT_FIND_USER_ERROR_DICT
+                resp = DEFAULT_ERROR_DICT
                 return resp, 404
             author = author_select.first(author)
             if not author:
-                resp = CANT_FIND_USER_ERROR_DICT
+                resp = DEFAULT_ERROR_DICT
                 return resp, 404
             thread_id = thread_create.first(thread_slug, created, message, title, author[0], forum[0])
 

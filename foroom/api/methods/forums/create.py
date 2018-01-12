@@ -1,5 +1,5 @@
 from settings import connection
-from api.errors import CANT_FIND_USER_ERROR_DICT
+from api.errors import DEFAULT_ERROR_DICT
 
 
 def forum_create(payload):
@@ -15,7 +15,7 @@ def forum_create(payload):
 
             user_record = user_select.first(user)
             if not user_record:
-                resp = CANT_FIND_USER_ERROR_DICT
+                resp = DEFAULT_ERROR_DICT
                 return resp, 404
             user_id = user_record[0]
 

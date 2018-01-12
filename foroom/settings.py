@@ -1,4 +1,3 @@
-import psycopg2
 import postgresql
 from flask import Flask
 

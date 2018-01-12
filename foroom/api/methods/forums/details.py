@@ -1,5 +1,5 @@
 from settings import connection
-from api.errors import CANT_FIND_USER_ERROR_DICT
+from api.errors import DEFAULT_ERROR_DICT
 
 
 def forum_details_get(slug):
@@ -14,5 +14,5 @@ def forum_details_get(slug):
         username = user[1]
         resp = {'slug': forum[1], 'user': username, 'title': forum[2], 'posts': post_count, 'threads': thread_count}
         return resp, 200
-    resp = CANT_FIND_USER_ERROR_DICT
+    resp = DEFAULT_ERROR_DICT
     return resp, 404

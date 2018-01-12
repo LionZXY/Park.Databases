@@ -1,10 +1,9 @@
 from settings import connection
 from utils import normalize_timestamp, flush_dictionary
-from api.errors import CANT_FIND_FORUM_BY_SLUG_ERROR_DICT
+from api.errors import DEFAULT_ERROR_DICT
 
 
-def forum_threads_get(slug, query_args):
-    # print('forum_threads_get, lold :: {}'.format(query_args))
+def thread_objects_get(slug, query_args):
     limit = query_args.get('limit')
     desc = query_args.get('desc', False)
     desc = True if desc == 'true' else False
@@ -21,7 +20,7 @@ def forum_threads_get(slug, query_args):
     forum = forum_select.first(slug)
 
     if not forum:
-        resp = CANT_FIND_FORUM_BY_SLUG_ERROR_DICT
+        resp = DEFAULT_ERROR_DICT
         return resp, 404
     thread_select = connection.prepare('SELECT t.id, slug, created_on, message, title, nickname'
                                ' FROM thread as t'

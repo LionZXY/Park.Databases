@@ -2,11 +2,11 @@ import arrow
 from postgresql.types import Array
 
 from settings import connection
-from utils import normalize_timestamp, Convert
-from api.errors import DEFAULT_ERROR_DICT, CANT_FIND_THREAD_BY_SLUG_OR_ID_ERROR_DICT
+from utils import normalize_timestamp, to_int
+from api.errors import DEFAULT_ERROR_DICT
 
 
-def thread_post_create(slug_or_id, payload):
+def post_create(slug_or_id, payload):
     thread_id = None
     slug = None
     try:
@@ -25,7 +25,7 @@ def thread_post_create(slug_or_id, payload):
                 thread_select = connection.prepare('SELECT * FROM thread WHERE slug = $1::CITEXT')
                 thread = thread_select.first(slug)
             if not thread:
-                error = CANT_FIND_THREAD_BY_SLUG_OR_ID_ERROR_DICT
+                error = DEFAULT_ERROR_DICT
                 return error, 404
             if not payload:
                 return [], 201
@@ -97,7 +97,7 @@ def thread_post_create(slug_or_id, payload):
             for counter in range(message_count):
                 x = messages[counter]
                 message = {'created': created, 'message': x[1], 'author': id_to_nickname[x[2]],
-                           'id': last_id - message_count + counter + 1, 'parent': Convert.to_int(x[3]),
+                           'id': last_id - message_count + counter + 1, 'parent': to_int(x[3]),
                            'thread': thread_id, 'forum': forum_slug}
 
                 result.append(message)

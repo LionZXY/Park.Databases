@@ -6,7 +6,6 @@ from utils import normalize_timestamp, flush_dictionary, print_debug
 def post_details_get(post_id, query_args):
     post_id = int(post_id)
     related = query_args.get('related')
-    # print(related)
 
     related_items = {
         'user': False,
@@ -19,7 +18,6 @@ def post_details_get(post_id, query_args):
         for item in related:
             if item in ['user', 'thread', 'forum']:
                 related_items[item] = True
-                print(item)
 
     message_fields_len = 6
 
