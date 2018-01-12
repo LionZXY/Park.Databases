@@ -45,4 +45,4 @@ ENV LANG C.UTF-8
 CMD service postgresql start &&\
     cd $WORKDIR/foroom/ &&\
     psql -h localhost -U docker -d docker -f schema.sql -w &&\
-    gunicorn -b localhost:5000 --workers=8 main:app
+    gunicorn -b 0.0.0.0:5000 --workers=8 main:app
