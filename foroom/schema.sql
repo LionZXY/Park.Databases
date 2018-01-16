@@ -1,25 +1,23 @@
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
-create table "user"
+CREATE TABLE "user"
 (
-  id bigserial primary key,
-  nickname citext collate ucs_basic not null unique,
-  about text,
-  email citext not null unique,
-  fullname text
-)
-;
+  id       BIGSERIAL PRIMARY KEY,
+  nickname CITEXT COLLATE ucs_basic NOT NULL UNIQUE,
+  about    TEXT,
+  email    CITEXT                   NOT NULL UNIQUE,
+  fullname TEXT
+);
 
-create table forum
+CREATE TABLE forum
 (
-  id bigserial primary key,
-  slug citext not null unique,
-  title text,
-  userid bigint references "user"(id)
-)
-;
+  id     BIGSERIAL PRIMARY KEY,
+  slug   CITEXT NOT NULL UNIQUE,
+  title  TEXT,
+  userid BIGINT REFERENCES "user" (id)
+);
 
-create table thread
+CREATE TABLE thread
 (
   id         BIGSERIAL PRIMARY KEY,
   slug       CITEXT UNIQUE,
@@ -28,29 +26,54 @@ create table thread
   title      TEXT,
   authorid   BIGINT REFERENCES "user" (id),
   forumid    BIGINT REFERENCES forum (id)
-)
-;
+);
 
-create table message
+CREATE TABLE message
 (
   id         BIGSERIAL PRIMARY KEY,
   created_on TIMESTAMP,
   message    TEXT,
-  isedited   BOOLEAN,
+  isedited   BOOLEAN DEFAULT FALSE,
   authorid   BIGINT REFERENCES "user" (id),
-  parentid   BIGINT REFERENCES message (id) DEFAULT 0,
+  parentid   BIGINT DEFAULT 0,
   threadid   BIGINT REFERENCES thread (id),
   forumid    BIGINT REFERENCES forum (id),
-  parenttree BIGINT[] DEFAULT '{0}'
+  parenttree BIGINT []                      DEFAULT NULL
+);
 
-)
-;
+CREATE OR REPLACE FUNCTION create_parent_tree()
+  RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE treepath BIGINT [];
+BEGIN
+  IF (NEW.parentid = 0)
+  THEN
+    NEW.parenttree = treepath || NEW.id :: BIGINT;
+    RETURN NEW;
+  END IF;
 
-create table vote
+  treepath = (SELECT parenttree
+              FROM "message"
+              WHERE id = NEW.parentid AND threadid = NEW.threadid);
+
+  IF (cardinality(treepath) > 0)
+  THEN
+    treepath = treepath || NEW.id;
+    NEW.parenttree = treepath || NEW.id :: BIGINT;
+    RETURN NEW;
+  END IF;
+
+  RAISE invalid_foreign_key;
+END;
+$$;
+
+CREATE TRIGGER trigger_create_tree BEFORE INSERT ON message FOR EACH ROW EXECUTE PROCEDURE create_parent_tree();
+
+CREATE TABLE vote
 (
-  voice      INT CHECK (voice in (1, -1)),
-  userid     BIGINT REFERENCES "user" (id),
-  threadid   BIGINT REFERENCES thread (id),
+  voice    INT CHECK (voice IN (1, -1)),
+  userid   BIGINT REFERENCES "user" (id),
+  threadid BIGINT REFERENCES thread (id),
   CONSTRAINT unique_vote UNIQUE (userid, threadid)
-)
-;
+);

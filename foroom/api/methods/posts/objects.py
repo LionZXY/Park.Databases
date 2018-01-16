@@ -118,21 +118,21 @@ def post_objects_get(slug_or_id, query_args):
                     {select_fields}
                     FROM (
                         SELECT * FROM message
-                        WHERE message.threadid = $1 AND (message.parenttree || message.id)[2] in (
+                        WHERE message.threadid = $1 AND (message.parenttree)[1] in (
                             SELECT
-                                   (m1.parenttree || m1.id)[2]
+                                m1.id
                                  FROM message m1
-                                 WHERE m1.parentid IS NULL AND m1.threadid = $1 AND m1.parenttree || m1.id {comp} (
-                                         SELECT m2.parenttree || m2.id
+                                 WHERE m1.parentid = 0 AND m1.threadid = $1 AND m1.parenttree {comp} (
+                                         SELECT m2.parenttree
                                          FROM message m2
                                          WHERE m2.id = $3
                                  )
-                                 ORDER BY m1.parenttree || m1.id {sort} LIMIT $2
+                                 ORDER BY m1.parenttree {sort} LIMIT $2
                             )
                     ) as m
                     JOIN "user" ON "user".id = m.authorid
                     JOIN forum ON m.forumid = forum.id
-                    ORDER BY m.parenttree || m.id {sort},
+                    ORDER BY m.parenttree {sort},
                     m.threadid {sort}'''.format(sort=sort_option, comp=comp, since=since_cond_message,
                                                 select_fields=select_fields, select_inner=inner_select_fields_tree))
                 messages = message_select(thread_id, limit, since)
@@ -141,17 +141,17 @@ def post_objects_get(slug_or_id, query_args):
                     {select_fields}
                     FROM (
                         SELECT * FROM message
-                        WHERE message.threadid = $1 AND (message.parenttree || message.id)[2] in (
+                        WHERE message.threadid = $1 AND message.parenttree [1] in (
                             SELECT
-                                   (m1.parenttree || m1.id)[2]
+                                m1.id 
                                  FROM message m1
-                                 WHERE m1.parentid IS NULL AND m1.threadid = $1
-                                 ORDER BY m1.parenttree || m1.id {sort} LIMIT $2
+                                 WHERE m1.parentid = 0 AND m1.threadid = $1
+                                 ORDER BY m1.parenttree {sort} LIMIT $2
                             )
                     ) as m
                     JOIN "user" ON "user".id = m.authorid
                     JOIN forum ON m.forumid = forum.id
-                    ORDER BY m.parenttree || m.id {sort},
+                    ORDER BY m.parenttree {sort},
                     m.threadid {sort}'''.format(sort=sort_option, since=since_cond_message, select_fields=select_fields,
                                                 select_inner=inner_select_fields_tree))
                 messages = message_select(thread_id, limit)
