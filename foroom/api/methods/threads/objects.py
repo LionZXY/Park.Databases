@@ -22,15 +22,15 @@ def thread_objects_get(slug, query_args):
     if not forum:
         resp = DEFAULT_ERROR_DICT
         return resp, 404
-    thread_select = connection.prepare('SELECT t.id, slug, created_on, message, title, nickname'
-                               ' FROM thread as t'
-                               ' JOIN "user" as u ON t.authorid = u.id  WHERE t.forumid = $1::BIGINT'
-                               + since_cond +
-                               ' ORDER BY created_on ' + sort_option +
-                               ' LIMIT $2')
+    thread_select = connection.prepare('SELECT t.id, slug, created_on, message, title, nickname, voice'
+                                       ' FROM thread as t'
+                                       ' JOIN "user" as u ON t.authorid = u.id  WHERE t.forumid = $1::BIGINT'
+                                       + since_cond +
+                                       ' ORDER BY created_on ' + sort_option +
+                                       ' LIMIT $2')
     threads = []
 
-    for id, slug, created, message, title, nickname in thread_select(forum[0], int(limit) if limit else None):
+    for id, slug, created, message, title, nickname, voice in thread_select(forum[0], int(limit) if limit else None):
         thread = {
             'id': id,
             'slug': slug,
@@ -38,7 +38,8 @@ def thread_objects_get(slug, query_args):
             'message': message,
             'title': title,
             'author': nickname,
-            'forum': forum[1]
+            'forum': forum[1],
+            'votes': voice,
         }
 
         threads.append(flush_dictionary(thread))

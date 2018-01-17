@@ -37,7 +37,7 @@ def post_details_get(post_id, query_args):
                     'JOIN "user" AS thread_author ON thread_author.id = thread.authorid' if related_items[
             'thread'] else '',
         thread_fields=', thread.id, thread.slug, thread.created_on, '
-                      'thread.message, thread.title, thread_author.nickname' if related_items['thread'] else '',
+                      'thread.message, thread.title, thread.voice, thread_author.nickname' if related_items['thread'] else '',
         join_forum_author='JOIN "user" AS forum_author ON forum_author.id = forum.userid' if related_items[
             'forum'] else '',
         forum_fields=', forum.id, forum.title, forum_author.nickname' if related_items['forum'] else '',
@@ -57,11 +57,12 @@ def post_details_get(post_id, query_args):
             'created': normalize_timestamp(message[thread_offset + 2]),
             'message': message[thread_offset + 3],
             'title': message[thread_offset + 4],
-            'author': message[thread_offset + 5],
+            'votes': message[thread_offset + 5],
+            'author': message[thread_offset + 6],
             'forum': message[4]
         }
 
-        thread_fields_len = 6
+        thread_fields_len = 7
     else:
         thread = None
         thread_fields_len = 0

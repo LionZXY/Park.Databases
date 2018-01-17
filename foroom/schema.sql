@@ -25,7 +25,8 @@ CREATE TABLE thread
   message    TEXT,
   title      TEXT,
   authorid   BIGINT REFERENCES "user" (id),
-  forumid    BIGINT REFERENCES forum (id)
+  forumid    BIGINT REFERENCES forum (id),
+  voice      INT DEFAULT 0
 );
 
 CREATE TABLE message
@@ -33,12 +34,12 @@ CREATE TABLE message
   id         BIGSERIAL PRIMARY KEY,
   created_on TIMESTAMP,
   message    TEXT,
-  isedited   BOOLEAN DEFAULT FALSE,
+  isedited   BOOLEAN   DEFAULT FALSE,
   authorid   BIGINT REFERENCES "user" (id),
-  parentid   BIGINT DEFAULT 0,
+  parentid   BIGINT    DEFAULT 0,
   threadid   BIGINT REFERENCES thread (id),
   forumid    BIGINT REFERENCES forum (id),
-  parenttree BIGINT []                      DEFAULT NULL
+  parenttree BIGINT [] DEFAULT NULL
 );
 
 CREATE OR REPLACE FUNCTION create_parent_tree()
@@ -68,12 +69,51 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_create_tree BEFORE INSERT ON message FOR EACH ROW EXECUTE PROCEDURE create_parent_tree();
+CREATE TRIGGER trigger_create_tree
+  BEFORE INSERT
+  ON message
+  FOR EACH ROW EXECUTE PROCEDURE create_parent_tree();
 
 CREATE TABLE vote
 (
   voice    INT CHECK (voice IN (1, -1)),
-  userid   BIGINT REFERENCES "user" (id),
+  usernick citext REFERENCES "user" (nickname),
   threadid BIGINT REFERENCES thread (id),
-  CONSTRAINT unique_vote UNIQUE (userid, threadid)
+  CONSTRAINT unique_vote UNIQUE (usernick, threadid)
 );
+
+CREATE OR REPLACE FUNCTION increment_voice_in_thread()
+  RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE thread
+  SET voice = voice + NEW.voice
+  WHERE id = NEW.threadid;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_voice_in_thread()
+  RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE thread
+  SET voice = voice + (NEW.voice - OLD.voice)
+  WHERE id = NEW.threadid;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_create_vote
+  AFTER INSERT
+  ON vote
+  FOR EACH ROW
+EXECUTE PROCEDURE increment_voice_in_thread();
+
+CREATE TRIGGER trigger_update_vote
+  AFTER UPDATE
+  ON vote
+  FOR EACH ROW
+EXECUTE PROCEDURE update_voice_in_thread();

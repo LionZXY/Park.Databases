@@ -21,11 +21,8 @@ def thread_details_get(slug_or_id):
         return error, 404
 
     thread_id, thread_slug, thread_created_on, thread_message, \
-    thread_title, thread_author_id, forum_id \
+    thread_title, thread_author_id, forum_id, voice \
         = thread
-
-    votes = connection.prepare('''SELECT sum(voice) FROM thread 
-                JOIN vote ON vote.threadid = thread.id WHERE thread.id = $1''').first(thread_id)
 
     forum_slug = api.methods.forum_select_by_id.first(forum_id)[1]
 
@@ -38,7 +35,7 @@ def thread_details_get(slug_or_id):
         'author': author,
         'id': thread_id,
         'created': normalize_timestamp(thread_created_on, time_to='+03:00', database_format=True),
-        'votes': votes
+        'votes': voice
     }
     return resp, 200
 
@@ -50,7 +47,7 @@ def thread_details_update(slug_or_id, payload):
 
     with connection.xact():
         thread_update = connection.prepare('''UPDATE thread SET message = coalesce($2, message), title = coalesce($3, title) WHERE {cond}
-            RETURNING id, slug, created_on, message, title, authorid, forumid'''.format(
+            RETURNING id, slug, created_on, message, title, authorid, forumid, voice'''.format(
             cond='id = $1' if thread_id else 'slug = $1'))
 
         if thread_id:
@@ -62,7 +59,7 @@ def thread_details_update(slug_or_id, payload):
             error = DEFAULT_ERROR_DICT
             return error, 404
         thread_id, thread_slug, thread_created_on, thread_message, \
-        thread_title, thread_author_id, forum_id \
+        thread_title, thread_author_id, forum_id, voice \
             = thread
 
         author = api.methods.user_select_by_id.first(thread_author_id)[1]
@@ -75,6 +72,7 @@ def thread_details_update(slug_or_id, payload):
         'title': thread_title,
         'author': author,
         'id': thread_id,
-        'created': normalize_timestamp(thread_created_on)
+        'created': normalize_timestamp(thread_created_on),
+        'votes': voice
     }
     return resp, 200
