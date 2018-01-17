@@ -2,6 +2,7 @@ import arrow
 from postgresql.types import Array
 from pprint import pprint
 
+from api.methods.NotFoundException import NotFoundException
 from settings import connection
 from utils import normalize_timestamp, to_int
 from api.errors import DEFAULT_ERROR_DICT
@@ -18,7 +19,7 @@ def post_create(slug_or_id, payload):
 
     created = normalize_timestamp(arrow.Arrow.utcnow())
     try:
-        with connection.xact():
+        with connection.xact() as xact:
             # Оставить
             if thread_id is not None:
                 thread_select = connection.prepare('SELECT * FROM thread WHERE id = $1::BIGINT')
@@ -51,50 +52,32 @@ def post_create(slug_or_id, payload):
                       $5 :: BIGINT,
                       $6 :: BIGINT
                     FROM "user" AS usr
-                   WHERE nickname = $3 :: CITEXT;''')
+                   WHERE nickname = $3 :: CITEXT RETURNING id;''')
 
-            messages = []
+            result = []
+            created_str = normalize_timestamp(created, json_format=True, time_to='+03:00')
 
             try:
                 for item in payload:
-                    messages.append(
-                        (created, item['message'], item['author'], thread_id, forum_id,
-                         item.get('parent', 0)))
+                    id = message_insert(created, item['message'], item['author'], thread_id, forum_id,
+                                        item.get('parent', 0))
+                    if len(id) != 1:
+                        xact.rollback()
+                        raise NotFoundException
+                    message = {'created': created_str, 'message': item['message'], 'author': item['author'],
+                               'id': id[0][0], 'parent': to_int(item.get('parent', 0)),
+                               'thread': thread_id, 'forum': forum_slug}
+                    result.append(message)
             except KeyError:
                 error = DEFAULT_ERROR_DICT
                 return error, 404
 
-            try:
-                message_insert_result = message_insert.load_rows(messages)
-            except Exception as e:
-                print("==============================")
-                pprint(vars(e))
-                print(e.message)
-                print("==============================")
-                if e.message == 'invalid_foreign_key':
-                    error = DEFAULT_ERROR_DICT
-                    return error, 409
-
-            if message_insert_result is not None:
-                print(message_insert_result)
-
-            last_id_select = connection.prepare('select CURRVAL(\'message_id_seq\')')
-            last_id = last_id_select.first()
-
-            created = normalize_timestamp(created, json_format=True, time_to='+03:00')
-
-            result = []
-            message_count = len(messages)
-            for counter in range(message_count):
-                x = messages[counter]
-                message = {'created': created, 'message': x[1], 'author': x[2],
-                           'id': last_id - message_count + counter + 1, 'parent': to_int(x[5]),
-                           'thread': thread_id, 'forum': forum_slug}
-
-                result.append(message)
-                counter += 1
-
             return result, 201
-    except:
+    except NotFoundException:
+        return DEFAULT_ERROR_DICT, 404
+    except Exception as e:
+        if e.message == 'invalid_foreign_key':
+            error = DEFAULT_ERROR_DICT
+            return error, 409
         import traceback
         print(traceback.format_exc())
