@@ -15,7 +15,6 @@ def post_create(slug_or_id, payload):
         thread_id = int(slug_or_id)
     except:
         slug = slug_or_id
-    authors = []
 
     created = normalize_timestamp(arrow.Arrow.utcnow())
     try:
@@ -52,9 +51,13 @@ def post_create(slug_or_id, payload):
                       $5 :: BIGINT,
                       $6 :: BIGINT
                     FROM "user" AS usr
-                   WHERE nickname = $3 :: CITEXT RETURNING id;''')
+                   WHERE nickname = $3 :: CITEXT RETURNING id, authorid;''')
+
+            forum_user_insert = connection.prepare('''INSERT INTO userforum (forumid, usernick, userid) VALUES ($1, $2::CITEXT, $3)
+ON CONFLICT DO NOTHING;''')
 
             result = []
+            forumuser = []
             created_str = normalize_timestamp(created, json_format=True, time_to='+03:00')
 
             try:
@@ -67,10 +70,13 @@ def post_create(slug_or_id, payload):
                     message = {'created': created_str, 'message': item['message'], 'author': item['author'],
                                'id': id[0][0], 'parent': to_int(item.get('parent', 0)),
                                'thread': thread_id, 'forum': forum_slug}
+                    forumuser.append((forum_id, item['author'], id[0][1]))
                     result.append(message)
             except KeyError:
                 error = DEFAULT_ERROR_DICT
                 return error, 404
+
+            forum_user_insert.load_rows(forumuser)
 
             connection.prepare('''
 UPDATE forum

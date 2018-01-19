@@ -8,3 +8,8 @@ forum_select_by_id = connection.prepare('SELECT * FROM forum WHERE id = $1::BIGI
 
 thread_select_by_id = connection.prepare('SELECT * FROM thread WHERE id = $1::BIGINT')
 thread_select_by_slug = connection.prepare('SELECT * FROM thread WHERE slug = $1::CITEXT')
+
+increment_thread_count = connection.prepare('''
+UPDATE forum
+SET threads_count = threads_count + 1
+WHERE id = $1;''')

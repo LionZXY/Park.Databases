@@ -1,5 +1,6 @@
 from postgresql.exceptions import UniqueError
 
+from api.methods.helpers import increment_thread_count
 from settings import connection
 from utils import flush_dictionary, normalize_timestamp
 from api.errors import DEFAULT_ERROR_DICT
@@ -32,10 +33,9 @@ def thread_create(slug, payload):
                 return resp, 404
             thread_id = thread_create.first(thread_slug, created, message, title, author[0], forum[0])
 
-            connection.prepare('''
-UPDATE forum
-SET threads_count = threads_count + 1
-WHERE id = $1;''')(forum[0])
+            increment_thread_count(forum[0])
+
+            connection.prepare('INSERT INTO userforum (forumid, usernick, userid) VALUES ($1, $2::CITEXT, $3) ON CONFLICT DO NOTHING;')(forum[0], author[1], author[0])
 
             raw_resp = {
                 'slug': thread_slug,

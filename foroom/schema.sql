@@ -84,6 +84,16 @@ CREATE TABLE vote
   CONSTRAINT unique_vote UNIQUE (usernick, threadid)
 );
 
+CREATE TABLE userforum
+(
+    usernick CITEXT COLLATE ucs_basic NOT NULL,
+    userid INT,
+    forumid INT NOT NULL,
+    CONSTRAINT userforum_forumid_usernick_pk PRIMARY KEY (forumid, usernick, userid)
+);
+
+CREATE INDEX IF NOT EXISTS userforum_forumid_usernick_desc ON userforum(forumid, usernick DESC, userid);
+
 CREATE OR REPLACE FUNCTION increment_voice_in_thread()
   RETURNS TRIGGER
 LANGUAGE plpgsql
