@@ -76,6 +76,7 @@ ON CONFLICT DO NOTHING;''')
                 error = DEFAULT_ERROR_DICT
                 return error, 404
 
+            forumuser.sort(key=lambda val: val[1])
             forum_user_insert.load_rows(forumuser)
 
             connection.prepare('''
