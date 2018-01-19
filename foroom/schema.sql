@@ -145,3 +145,13 @@ CREATE INDEX message_threadid_parenttree_desc_index
   ON public.message (threadid, parenttree DESC);
 CREATE INDEX message_threadid_parenttree_index
   ON public.message (threadid, parenttree);
+
+CREATE INDEX message_threadid_parenttree_id_index
+  ON public.message (threadid, parenttree, id)
+  WHERE parentid = 0;
+CREATE INDEX message_threadid_parenttree_id_desc_index
+  ON public.message (threadid, parenttree DESC, id)
+  WHERE parentid = 0;
+
+CREATE INDEX "messages_tree[1]_index"
+  ON message (threadid, (parenttree [1]));

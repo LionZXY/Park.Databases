@@ -132,8 +132,7 @@ def post_objects_get(slug_or_id, query_args):
                     ) as m
                     JOIN "user" ON "user".id = m.authorid
                     JOIN forum ON m.forumid = forum.id
-                    ORDER BY m.parenttree {sort},
-                    m.threadid {sort}'''.format(sort=sort_option, comp=comp, since=since_cond_message,
+                    ORDER BY m.parenttree {sort}'''.format(sort=sort_option, comp=comp, since=since_cond_message,
                                                 select_fields=select_fields, select_inner=inner_select_fields_tree))
                 messages = message_select(thread_id, limit, since)
             else:
@@ -151,8 +150,7 @@ def post_objects_get(slug_or_id, query_args):
                     ) as m
                     JOIN "user" ON "user".id = m.authorid
                     JOIN forum ON m.forumid = forum.id
-                    ORDER BY m.parenttree {sort},
-                    m.threadid {sort}'''.format(sort=sort_option, since=since_cond_message, select_fields=select_fields,
+                    ORDER BY m.parenttree {sort}'''.format(sort=sort_option, since=since_cond_message, select_fields=select_fields,
                                                 select_inner=inner_select_fields_tree))
                 messages = message_select(thread_id, limit)
 
