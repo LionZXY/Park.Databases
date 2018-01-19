@@ -23,7 +23,7 @@ def post_objects_get(slug_or_id, query_args):
     if since:
         since_cond_message = ' AND message.id ' + ['>', '<'][1 if desc else 0] + ' $3::BIGINT'
         since_cond_m = ' WHERE m.id ' + ['>', '<'][1 if desc else 0] + ' $3::BIGINT'
-        since_cond_tree = 'WHERE m.parenttree || m.id ' + comp + ' (SELECT parenttree || id FROM message WHERE id = $3::BIGINT)'  # AND (message.parenttree[2] ' + ['>', '<'][desc] + ' $3::BIGINT OR message.parenttree[2] IS NULL) '
+        since_cond_tree = 'WHERE m.parenttree' + comp + ' (SELECT parenttree FROM message WHERE id = $3::BIGINT)'  # AND (message.parenttree[2] ' + ['>', '<'][desc] + ' $3::BIGINT OR message.parenttree[2] IS NULL) '
     else:
         since_cond_tree = since_cond_message = since_cond_m = ''
     select_fields = 'SELECT m.id, m.created_on, m.message, m.threadid, m.parentid, "user".nickname, forum.slug'
@@ -80,12 +80,12 @@ def post_objects_get(slug_or_id, query_args):
                          FROM (
                              {select_inner} 
                              FROM message JOIN thread ON message.threadid = thread.id 
-                             WHERE thread.slug = $1 ORDER BY message.parenttree || message.id {sort}
+                             WHERE thread.slug = $1 ORDER BY message.parenttree {sort}
                          ) as m
                          JOIN "user" ON "user".id = m.authorid
                          JOIN forum ON m.forumid = forum.id
                          {since}
-                         ORDER BY m.parenttree || m.id {sort} LIMIT $2'''.format(sort=sort_option,
+                         ORDER BY m.parenttree {sort} LIMIT $2'''.format(sort=sort_option,
                                                                                  since=since_cond_tree,
                                                                                  select_fields=select_fields,
                                                                                  select_inner=inner_select_fields_tree))
@@ -99,12 +99,12 @@ def post_objects_get(slug_or_id, query_args):
                          FROM (
                              {select_inner}
                              FROM message
-                             WHERE message.threadid = $1 ORDER BY message.parenttree || message.id {sort}
+                             WHERE message.threadid = $1 ORDER BY message.parenttree {sort}
                          ) as m
                          JOIN "user" ON "user".id = m.authorid
                          JOIN forum ON m.forumid = forum.id
-                         {since}
-                         ORDER BY m.parenttree || m.id {sort} LIMIT $2'''.format(sort=sort_option,
+                         {since} 
+                         ORDER BY m.parenttree {sort} LIMIT $2'''.format(sort=sort_option,
                                                                                  since=since_cond_tree,
                                                                                  select_fields=select_fields,
                                                                                  select_inner=inner_select_fields_tree))

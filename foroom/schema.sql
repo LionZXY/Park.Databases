@@ -89,9 +89,10 @@ CREATE TABLE userforum
     usernick CITEXT COLLATE ucs_basic NOT NULL,
     userid INT,
     forumid INT NOT NULL,
-    CONSTRAINT userforum_forumid_usernick_pk PRIMARY KEY (forumid, usernick, userid)
+    CONSTRAINT userforum_forumid_pk PRIMARY KEY (forumid)
 );
 
+CREATE INDEX IF NOT EXISTS userforum_forumid_usernick_desc ON userforum(forumid, usernick ASC, userid);
 CREATE INDEX IF NOT EXISTS userforum_forumid_usernick_desc ON userforum(forumid, usernick DESC, userid);
 
 CREATE OR REPLACE FUNCTION increment_voice_in_thread()
@@ -129,3 +130,18 @@ CREATE TRIGGER trigger_update_vote
   ON vote
   FOR EACH ROW
 EXECUTE PROCEDURE update_voice_in_thread();
+
+CREATE INDEX message_threadid_id_index
+  ON public.message (threadid, id);
+CREATE INDEX message_threadid_id_desc_index
+  ON public.message (threadid, id DESC);
+CREATE INDEX thread_forumid_created_on_index
+  ON public.thread (forumid, created_on);
+CREATE INDEX thread_forumid_created_on_desc_index
+  ON public.thread (forumid, created_on DESC);
+CREATE INDEX message_id_parenttree_index
+  ON public.message (id, parenttree);
+CREATE INDEX message_threadid_parenttree_desc_index
+  ON public.message (threadid, parenttree DESC);
+CREATE INDEX message_threadid_parenttree_index
+  ON public.message (threadid, parenttree);
