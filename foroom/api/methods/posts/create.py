@@ -72,6 +72,11 @@ def post_create(slug_or_id, payload):
                 error = DEFAULT_ERROR_DICT
                 return error, 404
 
+            connection.prepare('''
+UPDATE forum
+SET posts_count = posts_count + $1
+WHERE id = $2;''')(len(payload), forum_id)
+
             return result, 201
     except NotFoundException:
         return DEFAULT_ERROR_DICT, 404

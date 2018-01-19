@@ -32,6 +32,11 @@ def thread_create(slug, payload):
                 return resp, 404
             thread_id = thread_create.first(thread_slug, created, message, title, author[0], forum[0])
 
+            connection.prepare('''
+UPDATE forum
+SET threads_count = threads_count + 1
+WHERE id = $1;''')(forum[0])
+
             raw_resp = {
                 'slug': thread_slug,
                 'forum': forum[1],

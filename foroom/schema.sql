@@ -11,10 +11,12 @@ CREATE TABLE "user"
 
 CREATE TABLE forum
 (
-  id     BIGSERIAL PRIMARY KEY,
-  slug   CITEXT NOT NULL UNIQUE,
-  title  TEXT,
-  userid BIGINT REFERENCES "user" (id)
+  id            BIGSERIAL PRIMARY KEY,
+  slug          CITEXT NOT NULL UNIQUE,
+  title         TEXT,
+  userid        BIGINT REFERENCES "user" (id),
+  posts_count   INT DEFAULT 0,
+  threads_count INT DEFAULT 0
 );
 
 CREATE TABLE thread
@@ -77,7 +79,7 @@ CREATE TRIGGER trigger_create_tree
 CREATE TABLE vote
 (
   voice    INT CHECK (voice IN (1, -1)),
-  usernick citext REFERENCES "user" (nickname),
+  usernick CITEXT REFERENCES "user" (nickname),
   threadid BIGINT REFERENCES thread (id),
   CONSTRAINT unique_vote UNIQUE (usernick, threadid)
 );

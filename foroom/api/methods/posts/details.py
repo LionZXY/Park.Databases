@@ -19,10 +19,10 @@ def post_details_get(post_id, query_args):
             if item in ['user', 'thread', 'forum']:
                 related_items[item] = True
 
-    message_fields_len = 6
+    message_fields_len = 7
 
     message_select = connection.prepare('''
-        SELECT m.created_on, m.message, "user".nickname, m.threadid, forum.slug, isedited 
+        SELECT m.created_on, m.message, "user".nickname, m.threadid, forum.slug, isedited, m.parentid
         {thread_fields}
         {forum_fields}
         {user_fields}
@@ -37,10 +37,11 @@ def post_details_get(post_id, query_args):
                     'JOIN "user" AS thread_author ON thread_author.id = thread.authorid' if related_items[
             'thread'] else '',
         thread_fields=', thread.id, thread.slug, thread.created_on, '
-                      'thread.message, thread.title, thread.voice, thread_author.nickname' if related_items['thread'] else '',
+                      'thread.message, thread.title, thread.voice, thread_author.nickname' if related_items[
+            'thread'] else '',
         join_forum_author='JOIN "user" AS forum_author ON forum_author.id = forum.userid' if related_items[
             'forum'] else '',
-        forum_fields=', forum.id, forum.title, forum_author.nickname' if related_items['forum'] else '',
+        forum_fields=', forum.id, forum.title, forum_author.nickname, forum.posts_count, forum.threads_count' if related_items['forum'] else '',
         user_fields=', "user".about, "user".email, "user".fullname' if related_items['user'] else ''))
 
     message = message_select.first(post_id)
@@ -69,18 +70,17 @@ def post_details_get(post_id, query_args):
 
     if related_items['forum']:
         forum_offset = message_fields_len + thread_fields_len
-        forum_fields_len = 3
+        forum_fields_len = 5
 
         forum = {
             'id': message[forum_offset],
             'slug': message[4],
             'title': message[forum_offset + 1],
-            'user': message[forum_offset + 2]
+            'user': message[forum_offset + 2],
+            'posts': message[forum_offset + 3],
+            'threads': message[forum_offset + 4]
         }
 
-        # Optimization zone
-        forum['posts'] = connection.prepare('SELECT COUNT(id) FROM message WHERE forumid = $1').first(forum['id'])
-        forum['threads'] = connection.prepare('SELECT COUNT(id) FROM thread WHERE forumid = $1').first(forum['id'])
     else:
         forum = None
         forum_fields_len = 0
@@ -97,7 +97,6 @@ def post_details_get(post_id, query_args):
     else:
         user = None
 
-
     post = {
         'id': post_id,
         'created': normalize_timestamp(message[0], time_to='+03:00'),
@@ -105,7 +104,8 @@ def post_details_get(post_id, query_args):
         'author': message[2],
         'thread': message[3],
         'forum': message[4],
-        'isEdited': message[5]
+        'isEdited': message[5],
+        'parent': message[6]
     }
 
     resp = {
